@@ -36,12 +36,12 @@ void blur_frame(int width, int height, int* blur_radii,
 	  int r = blur_radii[idx];
 	  memset(&t,0,sizeof(t));
 
-	  for(int yy = y-r; yy < y+r; yy++)
+	  for(int yy = y-r; yy <= y+r; yy++)
 	    {
 	      if(yy < 0 || yy >= height)
 		continue;
 	      
-	      for(int xx = x-r; xx < x+r; xx++)
+	      for(int xx = x-r; xx <= x+r; xx++)
 		{
 		  if(xx < 0 || xx >= width)
 		    continue;
