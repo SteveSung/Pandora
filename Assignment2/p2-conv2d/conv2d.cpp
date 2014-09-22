@@ -27,6 +27,7 @@ void blur_frame(int width, int height, int* blur_radii,
 {
   pixel_t t;
 
+#pragma omp parallel for shared(idx, r) private(y,x)
   for(int y = 0; y < height; y++)
     {
       for(int x = 0; x < width; x++)

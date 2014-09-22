@@ -1,0 +1,130 @@
+
+;; Function void matmuld(double**, double**, double**) (_Z7matmuldPPdS0_S0_)
+
+void matmuld(double**, double**, double**) (double * * a, double * * b, double * * c)
+{
+  int k;
+  int j;
+  int i;
+  double D.2120;
+  double D.2119;
+  double D.2118;
+  double * D.2117;
+  long unsigned int D.2116;
+  long unsigned int D.2115;
+  double * D.2114;
+  double * * D.2113;
+  long unsigned int D.2112;
+  long unsigned int D.2111;
+  double D.2110;
+  double * D.2109;
+  long unsigned int D.2108;
+  long unsigned int D.2107;
+  double * D.2106;
+  double * * D.2105;
+  long unsigned int D.2104;
+  long unsigned int D.2103;
+  double D.2102;
+  double * D.2101;
+  long unsigned int D.2100;
+  long unsigned int D.2099;
+  double * D.2098;
+  double * * D.2097;
+  long unsigned int D.2096;
+  long unsigned int D.2095;
+  double * D.2094;
+  long unsigned int D.2093;
+  long unsigned int D.2092;
+  double * D.2091;
+  double * * D.2090;
+  long unsigned int D.2089;
+  long unsigned int D.2088;
+  bool D.2086;
+  bool D.2081;
+  bool D.2076;
+
+<bb 2>:
+  i_4 = 0;
+  goto <bb 10>;
+
+<bb 3>:
+  j_6 = 0;
+  goto <bb 8>;
+
+<bb 4>:
+  k_8 = 0;
+  goto <bb 6>;
+
+<bb 5>:
+  D.2088_10 = (long unsigned int) i_1;
+  D.2089_11 = D.2088_10 * 8;
+  D.2090_13 = c_12(D) + D.2089_11;
+  D.2091_14 = *D.2090_13;
+  D.2092_15 = (long unsigned int) j_2;
+  D.2093_16 = D.2092_15 * 8;
+  D.2094_17 = D.2091_14 + D.2093_16;
+  D.2095_18 = (long unsigned int) i_1;
+  D.2096_19 = D.2095_18 * 8;
+  D.2097_20 = c_12(D) + D.2096_19;
+  D.2098_21 = *D.2097_20;
+  D.2099_22 = (long unsigned int) j_2;
+  D.2100_23 = D.2099_22 * 8;
+  D.2101_24 = D.2098_21 + D.2100_23;
+  D.2102_25 = *D.2101_24;
+  D.2103_26 = (long unsigned int) i_1;
+  D.2104_27 = D.2103_26 * 8;
+  D.2105_29 = a_28(D) + D.2104_27;
+  D.2106_30 = *D.2105_29;
+  D.2107_31 = (long unsigned int) k_3;
+  D.2108_32 = D.2107_31 * 8;
+  D.2109_33 = D.2106_30 + D.2108_32;
+  D.2110_34 = *D.2109_33;
+  D.2111_35 = (long unsigned int) k_3;
+  D.2112_36 = D.2111_35 * 8;
+  D.2113_38 = b_37(D) + D.2112_36;
+  D.2114_39 = *D.2113_38;
+  D.2115_40 = (long unsigned int) j_2;
+  D.2116_41 = D.2115_40 * 8;
+  D.2117_42 = D.2114_39 + D.2116_41;
+  D.2118_43 = *D.2117_42;
+  D.2119_44 = D.2110_34 * D.2118_43;
+  D.2120_45 = D.2102_25 + D.2119_44;
+  *D.2094_17 = D.2120_45;
+  k_46 = k_3 + 1;
+
+<bb 6>:
+  # k_3 = PHI <k_8(4), k_46(5)>
+  D.2086_9 = k_3 <= 1023;
+  if (D.2086_9 != 0)
+    goto <bb 5>;
+  else
+    goto <bb 7>;
+
+<bb 7>:
+  j_47 = j_2 + 1;
+
+<bb 8>:
+  # j_2 = PHI <j_6(3), j_47(7)>
+  D.2081_7 = j_2 <= 1023;
+  if (D.2081_7 != 0)
+    goto <bb 4>;
+  else
+    goto <bb 9>;
+
+<bb 9>:
+  i_48 = i_1 + 1;
+
+<bb 10>:
+  # i_1 = PHI <i_4(2), i_48(9)>
+  D.2076_5 = i_1 <= 1023;
+  if (D.2076_5 != 0)
+    goto <bb 3>;
+  else
+    goto <bb 11>;
+
+<bb 11>:
+  return;
+
+}
+
+

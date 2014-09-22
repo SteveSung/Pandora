@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <cassert>
+#include <stdio.h>
 
 typedef struct
 {
@@ -26,6 +27,7 @@ void *matmuld_worker(void *arg)
 	    }
 	}
     }
+  //printf("test in thread\n");
 }
 
 void pthread_matmuld(double **a,
@@ -39,15 +41,35 @@ void pthread_matmuld(double **a,
    * The structure and worker function
    * are good hints...
    */
+  int t;
+  int id;
   pthread_t *thr = new pthread_t[nthr];
   worker_t *tInfo = new worker_t[nthr];
 
-  tInfo[0].a = a;
-  tInfo[0].b = b;
-  tInfo[0].c = c;
-  tInfo[0].start = 0;
-  tInfo[0].end = 1024;
-  matmuld_worker((void*)tInfo);
+  for(t = 0; t < nthr; t++) {
+	  tInfo[t].a = a;
+	  tInfo[t].b = b;
+	  tInfo[t].c = c;
+	  tInfo[t].start = 1024/nthr * t;
+	  int end = 1024/nthr * (t+1);
+
+	  if(end + 1024/nthr > 1024)
+	  	end = 1024;
+	  
+	  tInfo[t].end = end;
+	  //printf("before pthread create in t:%d\n",t);
+	  id = pthread_create(&thr[t], NULL, matmuld_worker, (void *)&(tInfo[t]));
+	  //printf("after pthread create in t:%d id:%d\n",t,id);
+	  if(id)
+	  {
+		  printf("ERROR;return code from pthread_create() is %d\n", id);
+		 
+	  }
+  }
+  
+  for(t = 0; t < nthr; t++) {
+	  pthread_join(thr[t],NULL);
+  }
   
   delete [] thr;
   delete [] tInfo;
