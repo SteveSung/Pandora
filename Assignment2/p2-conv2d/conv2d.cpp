@@ -6,7 +6,6 @@
 #include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
-
 #include "readjpeg.h"
 
 typedef struct
@@ -24,7 +23,7 @@ typedef struct
 	int* blur_radii;
 	pixel_t *in;
 	pixel_t *out;
-} blur_t;
+} frame_t;
 
 double timestamp()
 {
@@ -33,17 +32,16 @@ double timestamp()
   return tv.tv_sec + 1e-6*tv.tv_usec;
 }
 
-void *blur_worker(void *arg)
+void *blur_frame(void *arg)
 {
-	blur_t *param = static_cast<blur_t*>(arg);
-	int width = param->width; 
-	int height_start = param->height_start;
-	int height_end = param->height_end;
-	int* blur_radii = param->blur_radii;
-	pixel_t *in = param->in;
-	pixel_t *out = param->out;
-
 	pixel_t t;
+	frame_t *f = static_cast<frame_t*>(arg);
+	int width = f->width; 
+	int height_start = f->height_start;
+	int height_end = f->height_end;
+	int* blur_radii = f->blur_radii;
+	pixel_t *in = f->in;
+	pixel_t *out = f->out;
 
 	for(int y = height_start; y < height_end; y++)
 	{
@@ -53,12 +51,12 @@ void *blur_worker(void *arg)
 		  int r = blur_radii[idx];
 		  memset(&t,0,sizeof(t));
 
-		  for(int yy = y-r; yy < y+r; yy++)
+		  for(int yy = y-r; yy <= y+r; yy++)
 		  {
 		      if(yy < height_start || yy >= height_end)
-			    continue;
+			  	continue;
 		      
-		      for(int xx = x-r; xx < x+r; xx++)
+		      for(int xx = x-r; xx <= x+r; xx++)
 			  {
 			    if(xx < 0 || xx >= width)
 			      continue;
@@ -66,7 +64,6 @@ void *blur_worker(void *arg)
 			    t.r += in[yy*width + xx].r;
 			    t.g += in[yy*width + xx].g;
 			    t.b += in[yy*width + xx].b;
-
 			  }
 		  }
 		  /* scale output (normalize) */
@@ -81,89 +78,30 @@ void *blur_worker(void *arg)
 		  out[idx] = t;
 		}
 	}
-
 }
 
-void pthread_blur(int width, int height, int* blur_radii, pixel_t *in, pixel_t *out, int nthr)
+void pthread_blur_frame(int width, int height, int* blur_radii, pixel_t *in, pixel_t *out, int nthr)
 {
 	pthread_t *thr = new pthread_t[nthr];
- 	blur_t *tInfo = new blur_t[nthr];
+ 	frame_t *tInfo = new frame_t[nthr];
 
-	for(int i = 0; i < nthr; ++i){
+	for(int i = 0; i < nthr; i++){
 		tInfo[i].width = width;
 		tInfo[i].height_start = height/nthr * i;
 		tInfo[i].height_end = height/nthr * (i+1);
 		tInfo[i].blur_radii = blur_radii;
 		tInfo[i].in = in;
 		tInfo[i].out = out;
+	
+		int id = pthread_create(&thr[i], NULL, blur_frame, &tInfo[i]);
 	}
 
-	for(int i = 0; i < nthr; ++i){
-		pthread_create(&thr[i], NULL,  blur_worker, &tInfo[i]);
-	}
-
-	for (int i = 0; i < nthr; ++i){
+	for (int i = 0; i < nthr; i++){
 		pthread_join(thr[i], NULL);
 	}
 
-	//handle overflow
-	if (height - height/nthr * nthr != 0){
-		blur_t temp;
-
-		temp.width = width;
-		temp.height_start = height/nthr * nthr;
-		temp.height_end = height;
-		temp.blur_radii = blur_radii;
-		temp.in = in;
-		temp.out = out;
-
-		blur_worker(&temp);
-	}
- 
 	delete [] thr;
 	delete [] tInfo;
-}
-
-void blur_frame(int width, int height, int* blur_radii,	pixel_t *in, pixel_t *out)
-{
-  pixel_t t;
-  
-  for(int y = 0; y < height; y++)
-  {
-    for(int x = 0; x < width; x++)
-    {
-	  int idx = y * width + x;
-	  int r = blur_radii[idx];
-	  memset(&t,0,sizeof(t));
-
-	  for(int yy = y-r; yy < y+r; yy++)
-	  {
-	      if(yy < 0 || yy >= height)
-		    continue;
-	      
-	      for(int xx = x-r; xx < x+r; xx++)
-		  {
-		    if(xx < 0 || xx >= width)
-		      continue;
-		  
-		    t.r += in[yy*width + xx].r;
-		    t.g += in[yy*width + xx].g;
-		    t.b += in[yy*width + xx].b;
-
-		  }
-	  }
-	  /* scale output (normalize) */
-	  float scale = (float)((2*r + 1)*(2*r+1));
-	  //printf("r=%d, scale = %f\n", r, scale);
-
-	  scale = 1.0f / scale;
-	  t.r *= scale;
-	  t.g *= scale;
-	  t.b *= scale;
-
-	  out[idx] = t;
-	}
-  }
 }
 
 void convert_to_pixel(pixel_t *out, frame_ptr in)
@@ -177,8 +115,7 @@ void convert_to_pixel(pixel_t *out, frame_ptr in)
 	  int b = (int)in->row_pointers[y][in->num_components*x + 2 ];
 	  out[y*in->image_width+x].r = (float)r;
 	  out[y*in->image_width+x].g = (float)g;
-	  out[y*in->image_width+x].b = (float)b;
-	 
+	  out[y*in->image_width+x].b = (float)b; 
 	}
     }
 }
@@ -201,6 +138,7 @@ void convert_to_frame(frame_ptr out, pixel_t *in)
 
 int main(int argc, char *argv[])
 {
+  int nprocs = sysconf(_SC_NPROCESSORS_ONLN);
   int c;
   char *inName = NULL;
   char *outName = NULL;
@@ -250,9 +188,7 @@ int main(int argc, char *argv[])
   outPix = new pixel_t[width*height];
   blur_radii = new int[width*height];
 
-  double t0;
-
-  for (int i = 1; i <= 16; ++i)
+  for (int i = 1; i <= nprocs; i++)
   {	  
   	  for(int y = 0; y < height; y+=(height/16))
 	  {
@@ -273,10 +209,10 @@ int main(int argc, char *argv[])
 		}
 	  }
 	  convert_to_pixel(inPix, frame);
-	  t0 = timestamp();
-	  pthread_blur(width, height, blur_radii, inPix, outPix, i);
+	  double t0 = timestamp();
+	  pthread_blur_frame(width, height, blur_radii, inPix, outPix, i);
 	  t0 = timestamp() - t0;
-	  printf("Parallel time: %g sec for %d processors\n", t0, i);
+	  printf("%d, %g sec\n", i,t0);
   }
   return 0;
 }
