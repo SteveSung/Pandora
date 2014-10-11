@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
   /* Arrays on the device (GPU) */
   cl_mem g_Y;
 
+  // Allocate arrays on the host and fill with random data.
   int n = (1<<20);
   h_Y = new float[n];
   h_YY = new float[n];
@@ -48,21 +49,27 @@ int main(int argc, char *argv[])
   cl_int err = CL_SUCCESS;
   /* CS194: Allocate memory for arrays on 
    * the GPU */
+
+  // Allocate the buffer memory objects.
   g_Y = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,sizeof(float)*n,NULL,&err);
   CHK_ERR(err);
 
+  // Write data from CPU to GPU.(this is opposite of clEnqueueReadBuffer())
   err = clEnqueueWriteBuffer(cv.commands, g_Y, true, 0, sizeof(float)*n,
 			     h_Y, 0, NULL, NULL);
   CHK_ERR(err);
-
+   
+  // Define the global and local workgroup sizes.
   size_t global_work_size[1] = {n};
   size_t local_work_size[1] = {128};
     
+  // Set the kernel args values.
   err = clSetKernelArg(incr, 0, sizeof(cl_mem), &g_Y);
   CHK_ERR(err);
   err = clSetKernelArg(incr, 1, sizeof(int), &n);
   CHK_ERR(err);
- 
+
+  // Call kernel on the GPU.
   err = clEnqueueNDRangeKernel(cv.commands,
 			       incr,
 			       1,//work_dim,

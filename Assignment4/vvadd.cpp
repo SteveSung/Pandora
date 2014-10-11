@@ -55,19 +55,41 @@ int main(int argc, char *argv[])
   cl_int err = CL_SUCCESS;
   
   /* CS194: Here's something to get you started  */
+  // allocate the buffer memory objects.
   g_Y = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,sizeof(float)*n,NULL,&err);
+  g_A = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,sizeof(float)*n,NULL,&err);
+  g_B = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,sizeof(float)*n,NULL,&err);
   CHK_ERR(err);
-  
 
   /* CS194: Copy data from host CPU to GPU */
+  err = clEnqueueWriteBuffer(cv.commands, g_Y, true, 0, sizeof(float)*n,
+            h_Y, 0, NULL, NULL);
+  CHK_ERR(err);
+  err = clEnqueueWriteBuffer(cv.commands, g_A, true, 0, sizeof(float)*n,
+            h_A, 0, NULL, NULL);
+  CHK_ERR(err);
+  err = clEnqueueWriteBuffer(cv.commands, g_B, true, 0, sizeof(float)*n,
+            h_B, 0, NULL, NULL);
+  CHK_ERR(err);
  
   /* CS194: Define the global and local workgroup sizes */
-  size_t global_work_size[1] = {0};
-  size_t local_work_size[1] = {0};
+  size_t global_work_size[1] = {n};
+  size_t local_work_size[1] = {128};
   
   /* CS194: Set Kernel Arguments */
+  err = clSetKernelArg(vvadd, 0, sizeof(cl_mem), &g_Y);
+  CHK_ERR(err);
+  err = clSetKernelArg(vvadd, 1, sizeof(cl_mem), &g_A);
+  CHK_ERR(err);
+  err = clSetKernelArg(vvadd, 2, sizeof(cl_mem), &g_B);
+  CHK_ERR(err);
+  err = clSetKernelArg(vvadd, 3, sizeof(int), &n);
+  CHK_ERR(err);
 
   /* CS194: Call kernel on the GPU */
+  err = clEnqueueNDRangeKernel(cv.commands, vvadd, 1, NULL,
+                  global_work_size, local_work_size, 0, NULL, NULL);
+  CHK_ERR(err);
 
   /* Read result of GPU on host CPU */
   err = clEnqueueReadBuffer(cv.commands, g_Y, true, 0, sizeof(float)*n,
@@ -75,15 +97,20 @@ int main(int argc, char *argv[])
   CHK_ERR(err);
 
   /* Check answer */
+  bool er = false;
   for(int i = 0; i < n; i++)
     {
       float d = h_A[i] + h_B[i];
       if(h_Y[i] != d)
 	{
 	  printf("error at %d :(\n", i);
-	  break;
+	  er = true;
+    break;
 	}
     }
+  if(!er) {
+    printf("CPU and GPU results match\n");
+  }
 
   /* Shut down the OpenCL runtime */
   uninitialize_ocl(cv);
