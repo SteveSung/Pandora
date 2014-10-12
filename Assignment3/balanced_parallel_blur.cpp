@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -32,7 +33,24 @@ void simple_blur(float* out, int n, float* frame, int* radii){
 }
 
 // My Blur
-void my_blur(float* out, int n, float* frame, int* radii){
+void my_blur(float* out, int n, float* frame, int* radii) {
+    omp_set_num_threads(16);
+    int r,c;
+    #pragma omp parallel for private(c) schedule(dynamic)
+    for(r=0; r<n; r++)
+      for(c=0; c<n; c++){
+        int rd = radii[r*n+c];
+        int c2;
+        int num = 0;
+        float avg = 0;
+        for(int r2=max(0,r-rd); r2<=min(n-1, r+rd); r2++){
+          for(c2 = max(0, c-rd); c2<=min(n-1, c+rd); c2++){
+            avg += frame[r2*n+c2];
+            num++;
+          }
+        }
+      out[r*n+c] = avg/num;
+    }
 }
 
 int main(int argc, char *argv[])

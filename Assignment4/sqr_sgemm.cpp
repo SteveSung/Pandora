@@ -1,5 +1,5 @@
 //void matmulf(float a [N][N], float b [N][N], float c[N][N])
-#include <smmintrin.h>
+#include <xmmintrin.h>
 
 #define fBlkI 128
 #define fBlkJ 128

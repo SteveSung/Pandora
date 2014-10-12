@@ -13,6 +13,8 @@ int main(int argc, char *argv[])
 {
   std::string matmul_kernel_str;
  
+  /* Provide names of the OpenCL kernels
+   * and cl file that they're kept in */
   std::string matmul_name_str = 
     std::string("matmul");
   std::string matmul_kernel_file = 
@@ -20,17 +22,26 @@ int main(int argc, char *argv[])
 
   cl_vars_t cv; 
   cl_kernel matmul;
-  
+
+  /* Read OpenCL file into STL string */
   readFile(matmul_kernel_file,
 	   matmul_kernel_str);
   
+  /* Initialize the OpenCL runtime 
+   * Source in clhelp.cpp */
   initialize_ocl(cv);
   
+  // Compile all OpenCL kernels.
   compile_ocl_program(matmul, cv, matmul_kernel_str.c_str(),
 		      matmul_name_str.c_str());
   
+  // Arrays on the host (CPU)
   float *h_A, *h_B, *h_Y, *h_YY;
+  // Arrays on the device (GPU)
   cl_mem g_A, g_B, g_Y;
+
+  /* Allocate arrays on the host
+   * and fill with random data */
   int n = (1<<10);
   h_A = new float[n*n];
   assert(h_A);
@@ -49,32 +60,59 @@ int main(int argc, char *argv[])
       h_B[i] = (float)drand48();
     }
 
-
+  // Allocate memory for arrays on the GPU
   cl_int err = CL_SUCCESS;
+
   /* CS194: Allocate Buffers on the GPU.
    *...We're already allocating the Y buffer
    * on the GPU for you */
   g_Y = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,
 		       sizeof(float)*n*n,NULL,&err);
   CHK_ERR(err);
+  g_A = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,
+           sizeof(float)*n*n,NULL,&err);
+  CHK_ERR(err);
+  g_B = clCreateBuffer(cv.context,CL_MEM_READ_WRITE,
+           sizeof(float)*n*n,NULL,&err);
+  CHK_ERR(err);
   
   /* CS194: Copy data from host CPU to GPU */
+  err = clEnqueueWriteBuffer(cv.commands, g_Y, true, 0, sizeof(float)*n*n,
+            h_Y, 0, NULL, NULL);
+  CHK_ERR(err);
+  err = clEnqueueWriteBuffer(cv.commands, g_A, true, 0, sizeof(float)*n*n,
+            h_A, 0, NULL, NULL);
+  CHK_ERR(err);
+  err = clEnqueueWriteBuffer(cv.commands, g_B, true, 0, sizeof(float)*n*n,
+            h_B, 0, NULL, NULL);
+  CHK_ERR(err);
+
 
   /* CS194: Create appropriately sized workgroups */
-  size_t global_work_size[2] = {-1,-1};
-  size_t local_work_size[2] = {-1,-1};
+  size_t global_work_size[2] = {n,n};
+  size_t local_work_size[2] = {4,4};
   
   /* CS194: Set kernel arguments */
+  err = clSetKernelArg(matmul, 0, sizeof(cl_mem), &g_Y);
+  CHK_ERR(err);
+  err = clSetKernelArg(matmul, 1, sizeof(cl_mem), &g_A);
+  CHK_ERR(err);
+  err = clSetKernelArg(matmul, 2, sizeof(cl_mem), &g_B);
+  CHK_ERR(err);
+  err = clSetKernelArg(matmul, 3, sizeof(int), &n);
+  CHK_ERR(err);
+
 
   double t0 = timestamp();
+
   /* CS194: Launch matrix multiply kernel
-   * Here's a little code to get you started.. 
-   err = clEnqueueNDRangeKernel(cv.commands,...
-			       );
+    Here's a little code to get you started..  */
+   err = clEnqueueNDRangeKernel(cv.commands, matmul, 2, NULL,
+                    global_work_size, local_work_size, 0, NULL, NULL);
    CHK_ERR(err);
    err = clFinish(cv.commands);
    CHK_ERR(err);
-  */
+
   t0 = timestamp()-t0;
 
 

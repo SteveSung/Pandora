@@ -1,5 +1,8 @@
 __kernel void matmul(__global float *Y, __global float *A, __global float *B, 
 	 int n)
 {
-  /* CS194: Implement the body of this kernel */
+	int i = get_global_id(0);
+	int j = get_global_id(1);
+	for(int k=0; k<n; k++)
+		Y[i*n+j] += A[i*n+k] * B[k*n+j];		 
 }

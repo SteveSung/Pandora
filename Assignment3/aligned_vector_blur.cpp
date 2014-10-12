@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+#include <emmintrin.h>
 
 using namespace std;
 
@@ -33,6 +34,44 @@ void simple_blur(float* out, int n, float* frame, int* radii){
 
 // My Blur
 void my_blur(float* out, int n, float* frame, int* radii){
+  for (int r = 0; r < n; r++)
+    for (int c = 0; c < n; c++){
+      int rd = radii[r*n+c];
+      int num = 0;
+      float avg = 0;
+      float avg_array[4];
+      __m128 vector_sum = _mm_setzero_ps();
+      __m128 temp;
+
+      for (int r2 = max(0, r-rd); r2 <= min(n-1, r+rd); r2++)
+      {
+        int c2 = max(0, c-rd);
+        for (; c2 <= min(n-1, c+rd); c2++) {
+            if (((r2*n+c2)%4) == 0) {
+              while ( c2 + 4 <= min(n-1, c+rd)) {
+                temp = _mm_load_ps(frame+(r2*n+c2));
+                vector_sum = _mm_add_ps(vector_sum, temp);
+                num += 4;
+                c2 += 4;
+              }
+              break;
+            } else {
+              avg += frame[r2*n+c2];
+              num++;
+            }
+        }
+        _mm_store_ps(avg_array, vector_sum);
+
+        for (c2; c2 <= min(n-1, c+rd); c2++) {
+          avg += frame[r2*n+c2];
+          num++;
+        }
+
+      }
+
+      avg += avg_array[0] + avg_array[1] + avg_array[2] + avg_array[3];
+      out[r*n+c] = avg / num;
+    }
 }
 
 int main(int argc, char *argv[])
